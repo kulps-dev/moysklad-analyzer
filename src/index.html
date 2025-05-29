@@ -13,7 +13,7 @@
     <div class="container">
         <header class="animate__animated animate__fadeInDown">
             <h1>Анализатор Отгрузок МойСклад</h1>
-            <p class="header-description">Мощный инструмент для анализа продаж и отгрузок с визуализацией данных и детализированной отчетностью</p>
+            <p class="header-description">Мощный инструмент для экспорта данных о продажах и отгрузках</p>
         </header>
 
         <div class="card filters-card animate__animated animate__fadeIn">
@@ -55,48 +55,16 @@
         </div>
 
         <div class="actions">
-            <button id="analyze-btn" class="btn btn-primary animate__animated animate__pulse animate__infinite">
-                <i class="fas fa-chart-bar"></i> Сформировать отчет
+            <button id="export-excel-btn" class="btn btn-primary">
+                <i class="fas fa-file-excel"></i> Скачать Excel
+            </button>
+            <button id="export-gsheet-btn" class="btn btn-success">
+                <i class="fab fa-google"></i> Отправить в Google Sheets
             </button>
         </div>
 
         <div class="status-bar" id="status-bar">
             <i class="fas fa-check-circle"></i> Готов к работе
-        </div>
-
-        <div id="results-container" class="results-container" style="display: none;">
-            <div class="tabs">
-                <div class="tab active" data-tab="summary">Сводка</div>
-                <div class="tab" data-tab="details">Детализация</div>
-                <div class="tab" data-tab="charts">Графики</div>
-            </div>
-
-            <div class="tab-content active" id="summary-tab">
-                <div class="card">
-                    <h2><i class="fas fa-chart-pie"></i> Ключевые показатели</h2>
-                    <div class="filters-row" id="summary-cards">
-                        <!-- Динамически заполняемые карточки с показателями -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="details-tab">
-                <div class="card">
-                    <h2><i class="fas fa-table"></i> Детализация отгрузок</h2>
-                    <div id="details-table">
-                        <!-- Таблица с детализацией -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="charts-tab">
-                <div class="card">
-                    <h2><i class="fas fa-chart-line"></i> Визуализация данных</h2>
-                    <div class="chart-container">
-                        <canvas id="sales-chart"></canvas>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -104,8 +72,6 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="./scripts/app.js"></script>
     <script src="./scripts/moysklad-integration.js"></script>
