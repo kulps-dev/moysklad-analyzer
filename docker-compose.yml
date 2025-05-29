@@ -8,3 +8,9 @@ services:
     volumes:
       - ./src:/usr/share/nginx/html
     restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

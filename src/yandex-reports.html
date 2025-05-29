@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Яндекс Отчеты</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles/style.css">
+    <link rel="stylesheet" href="./styles/yandex-reports.css">
+</head>
+<body>
+    <div class="container">
+        <header class="animate__animated animate__fadeInDown">
+            <a href="index.html" class="back-button">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+            <h1>Яндекс Отчеты</h1>
+            <p class="header-description">Обработка отчетов из Яндекс.Маркета</p>
+        </header>
+
+        <div class="card report-types-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-file-alt"></i> Выберите тип отчета</h2>
+            <div class="report-types">
+                <label class="report-type">
+                    <input type="radio" name="report-type" value="old" checked>
+                    <div class="report-type-card">
+                        <i class="fas fa-file-excel"></i>
+                        <h3>Старая версия</h3>
+                        <p>Отчеты в старом формате</p>
+                    </div>
+                </label>
+                
+                <label class="report-type">
+                    <input type="radio" name="report-type" value="new">
+                    <div class="report-type-card">
+                        <i class="fas fa-file-excel"></i>
+                        <h3>Новая версия</h3>
+                        <p>Отчеты в новом формате</p>
+                    </div>
+                </label>
+                
+                <label class="report-type">
+                    <input type="radio" name="report-type" value="orders">
+                    <div class="report-type-card">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Отчет по заказам</h3>
+                        <p>Детализация по заказам</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="upload-report-btn" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Загрузить отчет
+            </button>
+            <button id="calculate-btn" class="btn btn-success">
+                <i class="fas fa-calculator"></i> Рассчитать
+            </button>
+        </div>
+
+        <div class="status-bar" id="status-bar">
+            <i class="fas fa-info-circle"></i> Выберите тип отчета и загрузите файл
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="./scripts/app.js"></script>
+</body>
+</html>

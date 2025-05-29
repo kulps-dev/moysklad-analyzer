@@ -1,0 +1,113 @@
+/* Стили для страницы Яндекс отчетов */
+.report-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.report-type {
+    display: block;
+}
+
+.report-type input {
+    display: none;
+}
+
+.report-type-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    transition: var(--transition);
+    border: 2px solid transparent;
+    text-align: center;
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.report-type input:checked + .report-type-card {
+    border-color: var(--accent);
+    background: rgba(253, 121, 168, 0.05);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+}
+
+.report-type-card i {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+    background: rgba(108, 92, 231, 0.1);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-type-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.report-type-card p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    flex-grow: 1;
+}
+
+.file-upload {
+    display: none;
+}
+
+.upload-label {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background: var(--card-bg);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 2px dashed rgba(108, 92, 231, 0.3);
+    text-align: center;
+    margin: 1rem 0;
+    width: 100%;
+}
+
+.upload-label:hover {
+    background: var(--card-bg-hover);
+    border-color: var(--primary);
+}
+
+.upload-label i {
+    display: block;
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.file-name {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.progress-bar {
+    height: 6px;
+    background: rgba(108, 92, 231, 0.2);
+    border-radius: 3px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background: var(--gradient);
+    width: 0%;
+    transition: width 0.3s ease;
+}

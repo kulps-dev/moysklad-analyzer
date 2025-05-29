@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор Отгрузок МойСклад</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles/moysklad.css">
+</head>
+<body>
+    <div class="container">
+        <header class="animate__animated animate__fadeInDown">
+            <a href="index.html" class="back-button">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+            <h1>Анализатор Отгрузок МойСклад</h1>
+            <p class="header-description">Мощный инструмент для экспорта данных о продажах и отгрузках</p>
+        </header>
+
+        <div class="card filters-card animate__animated animate__fadeIn">
+            <h2><i class="fas fa-filter"></i> Фильтры</h2>
+            <div class="filters-row">
+                <div class="form-group">
+                    <label for="project-filter"><i class="fas fa-project-diagram"></i> Проект:</label>
+                    <select id="project-filter" class="form-control">
+                        <option value="">Все проекты</option>
+                        <option value="project1">Проект А</option>
+                        <option value="project2">Проект Б</option>
+                        <option value="project3">Проект В</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="channel-filter"><i class="fas fa-store"></i> Канал продаж:</label>
+                    <select id="channel-filter" class="form-control">
+                        <option value="">Все каналы</option>
+                        <option value="online">Онлайн</option>
+                        <option value="retail">Розница</option>
+                        <option value="wholesale">Опт</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card dates-card animate__animated animate__fadeIn">
+            <h2><i class="far fa-calendar-alt"></i> Период анализа</h2>
+            <div class="filters-row">
+                <div class="form-group">
+                    <label for="start-date"><i class="fas fa-calendar-day"></i> Дата начала:</label>
+                    <input type="text" id="start-date" class="form-control datepicker" placeholder="Выберите дату">
+                </div>
+                <div class="form-group">
+                    <label for="end-date"><i class="fas fa-calendar-day"></i> Дата окончания:</label>
+                    <input type="text" id="end-date" class="form-control datepicker" placeholder="Выберите дату">
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="export-excel-btn" class="btn btn-primary">
+                <i class="fas fa-file-excel"></i> Скачать Excel
+            </button>
+            <button id="export-gsheet-btn" class="btn btn-success">
+                <i class="fab fa-google"></i> Отправить в Google Sheets
+            </button>
+        </div>
+
+        <div class="status-bar" id="status-bar">
+            <i class="fas fa-check-circle"></i> Готов к работе
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="./scripts/moysklad.js"></script>
+    <style>
+        /* Стили для кастомного алерта */
+        .custom-alert {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .custom-alert.success {
+            background: linear-gradient(135deg, #00b894, #00a884);
+        }
+        
+        .custom-alert.show {
+            top: 30px;
+            opacity: 1;
+        }
+        
+        .custom-alert i {
+            margin-right: 0.75rem;
+            font-size: 1.2em;
+        }
+        
+        /* Анимация для flatpickr */
+        .flatpickr-calendar {
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>
