@@ -1,5 +1,7 @@
-// Общие функции для всех страниц
+// Модифицируем app.js
 document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем авторизацию
+    checkAuth();
    // Анимация элементов при загрузке
    animateElements();
    
@@ -100,4 +102,35 @@ function toggleButtonLoading(buttonId, isLoading) {
            button.classList.remove('pulse');
        }
    }
+}
+
+function checkAuth() {
+    if (!authService.isAuthenticated() && !window.location.pathname.includes('login.html')) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // Обновляем информацию о пользователе
+    updateUserProfile();
+    
+    // Обработчик кнопки выхода
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            authService.logout();
+            window.location.href = 'login.html';
+        });
+    }
+}
+
+function updateUserProfile() {
+    const user = authService.getCurrentUser();
+    if (user) {
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        
+        if (userAvatar) userAvatar.textContent = user.avatar;
+        if (userName) userName.textContent = user.name;
+    }
 }

@@ -6,8 +6,8 @@
     <title>Бизнес Аналитика</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./styles/style.css">
     <link rel="stylesheet" href="./styles/index.css">
+    <link rel="stylesheet" href="./styles/style.css">
     <style>
         .app-card {
             visibility: hidden;
@@ -25,6 +25,13 @@
 <body>
     <div class="container">
         <header class="animate__animated animate__fadeInDown">
+            <div class="user-profile" id="userProfile">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <div class="user-info">
+                    <span class="user-name" id="userName">Гость</span>
+                    <a href="#" class="logout-btn" id="logoutBtn">Выйти</a>
+                </div>
+            </div>
             <h1>Бизнес Аналитика</h1>
             <p class="header-description">Набор инструментов для анализа бизнес-показателей</p>
         </header>
@@ -59,7 +66,8 @@
         </div>
     </div>
 
-    <script src="./scripts/app.js"></script>
+    <script src="./scripts/auth.js"></script>
     <script src="./scripts/index.js"></script>
+    <script src="./scripts/app.js"></script>
 </body>
 </html>
