@@ -1,50 +1,46 @@
-<!-- src/login.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход в систему</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles/login.css">
 </head>
 <body>
-    <div class="login-container">
+    <div class="login-card">
         <div class="login-header">
-            <h1>Добро пожаловать</h1>
+            <h1>Вход в систему отчётов</h1>
         </div>
-        <form id="loginForm" class="login-form">
+        <form class="login-form" onsubmit="return handleLogin(event)">
             <div class="form-group">
                 <label for="username">Логин</label>
-                <input type="text" id="username" class="form-control" placeholder="Введите ваш логин" required>
+                <input type="text" id="username" class="form-control" placeholder="Ваш логин" required>
             </div>
             <div class="form-group">
                 <label for="password">Пароль</label>
-                <input type="password" id="password" class="form-control" placeholder="Введите ваш пароль" required>
+                <input type="password" id="password" class="form-control" placeholder="Ваш пароль" required>
                 <div id="errorMessage" class="error-message">Неверный логин или пароль</div>
             </div>
             <button type="submit" class="btn">Войти</button>
-            <div class="footer-text">Система отчетности v1.0</div>
         </form>
     </div>
 
-    <script type="module">
-        import { login } from './scripts/auth.js';
-        
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    <script>
+        function handleLogin(e) {
             e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const errorElement = document.getElementById('errorMessage');
             
-            errorElement.style.display = 'none';
-            
-            if (!login(username, password)) {
-                errorElement.style.display = 'block';
+            if (login(username, password)) {
+                return true;
+            } else {
+                document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('password').value = '';
+                return false;
             }
-        });
+        }
     </script>
+    <script src="/scripts/auth.js"></script>
 </body>
 </html>
