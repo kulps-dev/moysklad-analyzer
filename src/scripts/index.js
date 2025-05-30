@@ -1,32 +1,44 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Ждем загрузки всех шрифтов и изображений
-    Promise.all([
-        document.fonts.ready,
-        new Promise((resolve) => {
-            if (document.readyState === 'complete') {
-                resolve();
-            } else {
-                window.addEventListener('load', resolve);
-            }
-        })
-    ]).then(() => {
-        // Активируем анимацию карточек
-        activateCardsAnimation();
+    // Проверяем авторизацию
+    if (!authService.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Обновляем профиль пользователя
+    const user = authService.getCurrentUser();
+    if (user) {
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
         
-        // Добавляем эффекты при наведении
-        setupHoverEffects();
-    });
+        if (userAvatar) userAvatar.textContent = user.avatar;
+        if (userName) userName.textContent = user.name;
+    }
+
+    // Настраиваем кнопку выхода
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            authService.logout();
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Инициализация анимаций
+    initAnimations();
 });
 
-function activateCardsAnimation() {
+function initAnimations() {
+    // Активация карточек
     const appCards = document.querySelectorAll('.app-card');
     
-    // Делаем карточки видимыми перед анимацией
     appCards.forEach(card => {
         card.style.visibility = 'visible';
+        card.style.opacity = '0';
+        card.style.transition = 'opacity 0.5s ease';
     });
     
-    // Добавляем обработчики для плавного появления
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -39,11 +51,8 @@ function activateCardsAnimation() {
     appCards.forEach(card => {
         observer.observe(card);
     });
-}
 
-function setupHoverEffects() {
-    const appCards = document.querySelectorAll('.app-card');
-    
+    // Эффекты при наведении
     appCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
             card.style.transform = 'translateY(-10px) scale(1.02)';
