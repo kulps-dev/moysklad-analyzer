@@ -244,6 +244,7 @@ header h1 {
     z-index: 1;
     min-width: 180px;
     box-shadow: var(--shadow);
+    margin-bottom: 10px;
 }
 
 .btn::before {
