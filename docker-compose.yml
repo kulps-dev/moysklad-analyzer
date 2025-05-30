@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./src:/usr/share/nginx/html/src  # Изменено для соответствия nginx.conf
+      - ./src:/usr/share/nginx/html  # Теперь монтируем прямо в корень
     restart: unless-stopped
     networks:
       - app-network
