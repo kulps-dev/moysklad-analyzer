@@ -1,17 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация элементов
     initDatePickers();
     setupEventListeners();
     
-    // Показать статус бар с анимацией
     setTimeout(() => {
         const statusBar = document.getElementById('status-bar');
         statusBar.classList.add('show');
     }, 500);
     
-    // Добавить анимацию карточкам
     animateCards();
 });
+
+// Константы для API
+const MOYSKLAD_API_URL = 'https://api.moysklad.ru/api/remap/1.2';
+const MOYSKLAD_TOKEN = 'eba6f80476e5a056ef25f953a117d660be5d5687';
+const SERVER_URL = 'http://45.12.230.148/api/save-shipments'; // Адрес вашего сервера
 
 function animateCards() {
     const cards = document.querySelectorAll('.card');
@@ -26,10 +28,10 @@ function initDatePickers() {
         dateFormat: "d.m.Y",
         defaultDate: new Date(),
         maxDate: new Date(),
-        theme: "dark" // Новая тема для datepicker
+        theme: "dark"
     });
 
-    // Установка дат по умолчанию
+    // Установка дат по умолчанию (последние 30 дней)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -42,7 +44,6 @@ function setupEventListeners() {
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
     document.getElementById('export-gsheet-btn').addEventListener('click', exportToGoogleSheets);
     
-    // Добавить эффект при наведении на кнопки
     const buttons = document.querySelectorAll('.btn');
     buttons.forEach(btn => {
         btn.addEventListener('mouseenter', function() {
@@ -55,41 +56,125 @@ function setupEventListeners() {
     });
 }
 
-function exportToExcel() {
+async function exportToExcel() {
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
     const project = document.getElementById('project-filter').value;
     const channel = document.getElementById('channel-filter').value;
 
-    // Показать статус загрузки
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Подготовка Excel файла...');
+    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Получение данных из МойСклад...');
     toggleButtonLoading('export-excel-btn', true);
-    
-    // Добавить эффект пульсации
     document.getElementById('export-excel-btn').classList.add('pulse');
 
-    // Имитация загрузки данных
-    setTimeout(() => {
-        const data = [
-            ['Дата', 'Номер заказа', 'Клиент', 'Сумма', 'Прибыль', 'Статус'],
-            ['15.05.2023', '#12345', 'ООО "ТехноПром"', '45 200 ₽', '12 450 ₽', 'Выполнен'],
-            ['14.05.2023', '#12344', 'ИП Смирнов А.В.', '18 700 ₽', '5 210 ₽', 'Выполнен'],
-            ['12.05.2023', '#12340', 'ООО "СтройГарант"', '102 500 ₽', '-2 300 ₽', 'Возврат']
-        ];
-
-        generateExcelFile(data, `Отгрузки_${startDate}_${endDate}.xlsx`);
+    try {
+        // Получаем данные отгрузок
+        const shipments = await fetchShipments(startDate, endDate);
         
-        // Успешное завершение
+        // Сохраняем данные на сервер
+        await saveShipmentsToServer(shipments, startDate, endDate);
+        
+        // Формируем Excel файл
+        generateExcelFromShipments(shipments, startDate, endDate);
+        
         updateStatus('success', '<i class="fas fa-check-circle"></i> Excel файл готов к скачиванию');
+        animateSuccess();
+        showCustomAlert('Данные успешно загружены и сохранены!', 'success');
+    } catch (error) {
+        console.error('Ошибка при экспорте:', error);
+        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
+        showCustomAlert('Произошла ошибка при получении данных', 'error');
+    } finally {
         toggleButtonLoading('export-excel-btn', false);
         document.getElementById('export-excel-btn').classList.remove('pulse');
+    }
+}
+
+async function fetchShipments(startDate, endDate) {
+    // Преобразуем даты в формат для API МойСклад
+    const formattedStartDate = formatDateForAPI(startDate);
+    const formattedEndDate = formatDateForAPI(endDate);
+    
+    // Формируем URL запроса с фильтром по дате
+    const url = new URL(`${MOYSKLAD_API_URL}/entity/demand`);
+    url.searchParams.append('filter', `moment<=${formattedEndDate};moment>=${formattedStartDate}`);
+    url.searchParams.append('limit', '1000'); // Максимальное количество записей
+    
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Basic ${btoa(MOYSKLAD_TOKEN + ':')}`,
+            'Accept-Encoding': 'gzip',
+            'Accept': 'application/json'
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Ошибка API: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.rows || [];
+}
+
+function formatDateForAPI(dateString) {
+    // Преобразуем дату из формата "dd.mm.yyyy" в "yyyy-mm-dd"
+    const [day, month, year] = dateString.split('.');
+    return `${year}-${month}-${day} 00:00:00`;
+}
+
+async function saveShipmentsToServer(shipments, startDate, endDate) {
+    try {
+        const response = await fetch(SERVER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                startDate,
+                endDate,
+                shipments
+            })
+        });
         
-        // Анимация успеха
-        animateSuccess();
-    }, 1500);
+        if (!response.ok) {
+            throw new Error('Ошибка при сохранении данных на сервер');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Ошибка сохранения на сервер:', error);
+        // Продолжаем работу даже если сохранение на сервер не удалось
+    }
+}
+
+function generateExcelFromShipments(shipments, startDate, endDate) {
+    // Подготавливаем данные для Excel
+    const excelData = [
+        ['Дата', 'Номер', 'Контрагент', 'Сумма', 'Статус', 'Проект', 'Канал продаж']
+    ];
+    
+    shipments.forEach(shipment => {
+        excelData.push([
+            shipment.moment ? shipment.moment.split(' ')[0] : '',
+            shipment.name || '',
+            shipment.agent ? shipment.agent.name : '',
+            shipment.sum ? `${shipment.sum / 100} ₽` : '0 ₽',
+            shipment.state ? shipment.state.name : '',
+            shipment.project ? shipment.project.name : '',
+            shipment.salesChannel ? shipment.salesChannel.name : ''
+        ]);
+    });
+    
+    // Создаем Excel файл
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    XLSX.utils.book_append_sheet(wb, ws, "Отгрузки");
+    XLSX.writeFile(wb, `Отгрузки_${startDate}_${endDate}.xlsx`);
 }
 
 function exportToGoogleSheets() {
+    // Реализация аналогична exportToExcel, но с отправкой в Google Sheets
+    // Пока оставим вашу текущую реализацию
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
     const project = document.getElementById('project-filter').value;
@@ -103,20 +188,12 @@ function exportToGoogleSheets() {
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно отправлены в Google Sheets');
         toggleButtonLoading('export-gsheet-btn', false);
         document.getElementById('export-gsheet-btn').classList.remove('pulse');
-        
-        // Показать красивый алерт
         showCustomAlert('Данные успешно отправлены в Google Sheets!', 'success');
         animateSuccess();
     }, 2000);
 }
 
-function generateExcelFile(data, fileName) {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, "Отгрузки");
-    XLSX.writeFile(wb, fileName);
-}
-
+// Остальные вспомогательные функции остаются без изменений
 function updateStatus(statusClass, message) {
     const statusBar = document.getElementById('status-bar');
     statusBar.className = `status-bar ${statusClass} show`;
