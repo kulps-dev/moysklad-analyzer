@@ -73,16 +73,10 @@ function setupEventListeners() {
 }
 
 async function exportToTxt() {
-    const startDateInput = document.getElementById('start-date').value;
-    const endDateInput = document.getElementById('end-date').value;
-    
-    // Преобразуем даты из формата d.m.Y в Y-m-d для API
-    const startDateParts = startDateInput.split('.');
-    const endDateParts = endDateInput.split('.');
-    const startDate = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
-    const endDate = `${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
 
-    if (!startDateInput || !endDateInput) {
+    if (!startDate || !endDate) {
         showCustomAlert('Пожалуйста, выберите даты начала и окончания периода', 'error');
         return;
     }
@@ -91,47 +85,38 @@ async function exportToTxt() {
     const originalContent = btn.innerHTML;
     
     try {
-        // Показать статус загрузки
         updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Загрузка данных из МойСклад...');
         btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Загрузка...';
         btn.disabled = true;
         btn.classList.add('pulse');
 
-        // Отправляем запрос на бэкенд
-        const response = await fetch('http://localhost:5000/api/get_moysklad_data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                start_date: startDate,
-                end_date: endDate
-            })
-        });
-
+        // Делаем GET запрос с параметрами
+        const response = await fetch(`/api/moysklad?startDate=${startDate}&endDate=${endDate}`);
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Ошибка сервера');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Ошибка сервера');
         }
 
+        const data = await response.json();
+        
         // Создаем и скачиваем файл
-        const blob = await response.blob();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `moysklad_data_${startDateInput}_${endDateInput}.txt`;
+        a.download = `moysklad_data_${startDate}_${endDate}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         
-        // Успешное завершение
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно загружены');
         showCustomAlert('Данные успешно загружены из МойСклад!', 'success');
         animateSuccess();
     } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
-        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
-        showCustomAlert(`Ошибка: ${error.message}`, 'error');
+        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> ${error.message}`);
+        showCustomAlert(error.message, 'error');
     } finally {
         btn.innerHTML = originalContent;
         btn.disabled = false;
