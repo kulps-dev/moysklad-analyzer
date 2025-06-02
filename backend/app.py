@@ -2,23 +2,37 @@ from flask import Flask, request, jsonify, send_file
 import requests
 from io import StringIO
 from flask_cors import CORS
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)  # Разрешаем CORS для всех доменов
+CORS(app)
 
 MOYSKLAD_API_URL = "https://api.moysklad.ru/api/remap/1.2/entity/demand"
 MOYSKLAD_TOKEN = "eba6f80476e5a056ef25f953a117d660be5d5687"
 
-@app.route('/api/get_moysklad_data', methods=['POST'])
+def convert_date_format(date_str):
+    """Конвертирует дату из формата dd.mm.yyyy в yyyy-mm-dd"""
+    try:
+        return datetime.strptime(date_str, "%d.%m.%Y").strftime("%Y-%m-%d")
+    except ValueError:
+        raise ValueError("Неверный формат даты. Используйте DD.MM.YYYY")
+
+@app.route('/api/moysklad', methods=['GET'])
 def get_moysklad_data():
     try:
-        # Получаем даты из запроса
-        data = request.json
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        # Получаем параметры из запроса
+        start_date = request.args.get('startDate')
+        end_date = request.args.get('endDate')
         
-        # Формируем фильтр для запроса
-        filter_str = f"moment<{end_date} 00:00;moment>{start_date} 00:00"
+        if not start_date or not end_date:
+            return jsonify({"error": "Необходимо указать startDate и endDate"}), 400
+        
+        # Конвертируем даты в формат API МойСклад
+        start_date_api = convert_date_format(start_date)
+        end_date_api = convert_date_format(end_date)
+        
+        # Формируем фильтр
+        filter_str = f"moment<{end_date_api} 00:00;moment>{start_date_api} 00:00"
         
         # Делаем запрос к API МойСклад
         headers = {
@@ -30,23 +44,17 @@ def get_moysklad_data():
         }
         
         response = requests.get(MOYSKLAD_API_URL, headers=headers, params=params)
-        response.raise_for_status()
+        response.raise_for_status()  # Проверка на ошибки HTTP
         
-        # Создаем текстовый файл в памяти
-        file_data = StringIO()
-        file_data.write(response.text)
-        file_data.seek(0)
+        # Возвращаем данные как JSON
+        return jsonify(response.json())
         
-        # Отправляем файл как ответ
-        return send_file(
-            file_data,
-            mimetype='text/plain',
-            as_attachment=True,
-            download_name='moysklad_data.txt'
-        )
-        
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Ошибка при запросе к МойСклад: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Внутренняя ошибка сервера: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
