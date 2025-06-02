@@ -6,8 +6,20 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./frontend/src:/usr/share/nginx/html  # Монтируем фронтенд в корень веб-сервера
-    restart: unless-stopped
+      - ./frontend/src:/usr/share/nginx/html
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - FLASK_ENV=development
     networks:
       - app-network
 

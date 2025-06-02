@@ -11,7 +11,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Добавить анимацию карточкам
     animateCards();
+    
+    // Добавляем кнопку для скачивания TXT
+    addTxtExportButton();
 });
+
+function addTxtExportButton() {
+    const actionsDiv = document.querySelector('.actions');
+    if (!document.getElementById('export-txt-btn')) {
+        const downloadTxtBtn = document.createElement('button');
+        downloadTxtBtn.id = 'export-txt-btn';
+        downloadTxtBtn.className = 'btn btn-info';
+        downloadTxtBtn.innerHTML = '<i class="fas fa-file-alt"></i> Скачать данные из МойСклад (TXT)';
+        actionsDiv.insertBefore(downloadTxtBtn, actionsDiv.firstChild);
+        
+        // Добавляем обработчик события
+        downloadTxtBtn.addEventListener('click', exportToTxt);
+    }
+}
 
 function animateCards() {
     const cards = document.querySelectorAll('.card');
@@ -26,7 +43,7 @@ function initDatePickers() {
         dateFormat: "d.m.Y",
         defaultDate: new Date(),
         maxDate: new Date(),
-        theme: "dark" // Новая тема для datepicker
+        theme: "dark"
     });
 
     // Установка дат по умолчанию
@@ -53,6 +70,73 @@ function setupEventListeners() {
             this.classList.remove('float');
         });
     });
+}
+
+async function exportToTxt() {
+    const startDateInput = document.getElementById('start-date').value;
+    const endDateInput = document.getElementById('end-date').value;
+    
+    // Преобразуем даты из формата d.m.Y в Y-m-d для API
+    const startDateParts = startDateInput.split('.');
+    const endDateParts = endDateInput.split('.');
+    const startDate = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
+    const endDate = `${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`;
+
+    if (!startDateInput || !endDateInput) {
+        showCustomAlert('Пожалуйста, выберите даты начала и окончания периода', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('export-txt-btn');
+    const originalContent = btn.innerHTML;
+    
+    try {
+        // Показать статус загрузки
+        updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Загрузка данных из МойСклад...');
+        btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Загрузка...';
+        btn.disabled = true;
+        btn.classList.add('pulse');
+
+        // Отправляем запрос на бэкенд
+        const response = await fetch('http://localhost:5000/api/get_moysklad_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Ошибка сервера');
+        }
+
+        // Создаем и скачиваем файл
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `moysklad_data_${startDateInput}_${endDateInput}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Успешное завершение
+        updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно загружены');
+        showCustomAlert('Данные успешно загружены из МойСклад!', 'success');
+        animateSuccess();
+    } catch (error) {
+        console.error('Ошибка при загрузке данных:', error);
+        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
+        showCustomAlert(`Ошибка: ${error.message}`, 'error');
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+        btn.classList.remove('pulse');
+    }
 }
 
 function exportToExcel() {
@@ -151,7 +235,7 @@ function showCustomAlert(message, type) {
     alert.className = `custom-alert ${type}`;
     alert.innerHTML = `
         <div class="alert-content">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
