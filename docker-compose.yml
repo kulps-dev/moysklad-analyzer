@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./src:/usr/share/nginx/html  # Теперь монтируем прямо в корень
+      - ./frontend/src:/usr/share/nginx/html  # Монтируем фронтенд в корень веб-сервера
     restart: unless-stopped
     networks:
       - app-network
