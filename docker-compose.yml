@@ -6,10 +6,26 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./src:/usr/share/nginx/html  # Теперь монтируем прямо в корень
+      - ./src:/usr/share/nginx/html
     restart: unless-stopped
     networks:
       - app-network
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - MOYSKLAD_TOKEN=eba6f80476e5a056ef25f953a117d660be5d5687
+    networks:
+      - app-network
+    restart: unless-stopped
 
 networks:
   app-network:

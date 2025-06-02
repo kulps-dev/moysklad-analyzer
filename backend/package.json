@@ -1,0 +1,20 @@
+{
+    "name": "moysklad-backend",
+    "version": "1.0.0",
+    "main": "app.js",
+    "scripts": {
+      "start": "node app.js",
+      "dev": "nodemon app.js"
+    },
+    "dependencies": {
+      "axios": "^0.27.2",
+      "body-parser": "^1.20.0",
+      "cors": "^2.8.5",
+      "express": "^4.18.1",
+      "moment": "^2.29.4",
+      "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+      "nodemon": "^2.0.19"
+    }
+  }

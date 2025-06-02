@@ -10,11 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     animateCards();
 });
 
-// Константы для API
-const MOYSKLAD_API_URL = 'https://api.moysklad.ru/api/remap/1.2';
-const MOYSKLAD_TOKEN = 'eba6f80476e5a056ef25f953a117d660be5d5687';
-const SERVER_URL = 'http://45.12.230.148/api/save-shipments'; // Адрес вашего сервера
-
 function animateCards() {
     const cards = document.querySelectorAll('.card');
     cards.forEach((card, index) => {
@@ -31,7 +26,6 @@ function initDatePickers() {
         theme: "dark"
     });
 
-    // Установка дат по умолчанию (последние 30 дней)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -57,143 +51,83 @@ function setupEventListeners() {
 }
 
 async function exportToExcel() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    const project = document.getElementById('project-filter').value;
-    const channel = document.getElementById('channel-filter').value;
+    const startDate = document.getElementById('start-date')._flatpickr.selectedDates[0];
+    const endDate = document.getElementById('end-date')._flatpickr.selectedDates[0];
+    
+    const formattedStartDate = formatDateForBackend(startDate);
+    const formattedEndDate = formatDateForBackend(endDate);
 
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Получение данных из МойСклад...');
+    updateStatus('loading', '<i class="fas fa-spinner fa-spin"></i> Подготовка Excel файла...');
     toggleButtonLoading('export-excel-btn', true);
     document.getElementById('export-excel-btn').classList.add('pulse');
 
     try {
-        // Получаем данные отгрузок
-        const shipments = await fetchShipments(startDate, endDate);
+        const response = await fetch(`/api/moysklad/export-excel?startDate=${formattedStartDate}&endDate=${formattedEndDate}`);
         
-        // Сохраняем данные на сервер
-        await saveShipmentsToServer(shipments, startDate, endDate);
+        if (!response.ok) {
+            throw new Error('Ошибка при экспорте данных');
+        }
         
-        // Формируем Excel файл
-        generateExcelFromShipments(shipments, startDate, endDate);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Отгрузки_${formatDateForDisplay(startDate)}_${formatDateForDisplay(endDate)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
         
-        updateStatus('success', '<i class="fas fa-check-circle"></i> Excel файл готов к скачиванию');
+        updateStatus('success', '<i class="fas fa-check-circle"></i> Excel файл успешно скачан');
         animateSuccess();
-        showCustomAlert('Данные успешно загружены и сохранены!', 'success');
     } catch (error) {
-        console.error('Ошибка при экспорте:', error);
-        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
-        showCustomAlert('Произошла ошибка при получении данных', 'error');
+        updateStatus('danger', `<i class="fas fa-exclamation-circle"></i> ${error.message}`);
+        showCustomAlert(error.message, 'danger');
     } finally {
         toggleButtonLoading('export-excel-btn', false);
         document.getElementById('export-excel-btn').classList.remove('pulse');
     }
 }
 
-async function fetchShipments(startDate, endDate) {
-    // Преобразуем даты в формат для API МойСклад
-    const formattedStartDate = formatDateForAPI(startDate);
-    const formattedEndDate = formatDateForAPI(endDate);
+async function exportToGoogleSheets() {
+    const startDate = document.getElementById('start-date')._flatpickr.selectedDates[0];
+    const endDate = document.getElementById('end-date')._flatpickr.selectedDates[0];
     
-    // Формируем URL запроса с фильтром по дате
-    const url = new URL(`${MOYSKLAD_API_URL}/entity/demand`);
-    url.searchParams.append('filter', `moment<=${formattedEndDate};moment>=${formattedStartDate}`);
-    url.searchParams.append('limit', '1000'); // Максимальное количество записей
-    
-    const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Basic ${btoa(MOYSKLAD_TOKEN + ':')}`,
-            'Accept-Encoding': 'gzip',
-            'Accept': 'application/json'
-        }
-    });
-    
-    if (!response.ok) {
-        throw new Error(`Ошибка API: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data.rows || [];
-}
+    const formattedStartDate = formatDateForBackend(startDate);
+    const formattedEndDate = formatDateForBackend(endDate);
 
-function formatDateForAPI(dateString) {
-    // Преобразуем дату из формата "dd.mm.yyyy" в "yyyy-mm-dd"
-    const [day, month, year] = dateString.split('.');
-    return `${year}-${month}-${day} 00:00:00`;
-}
-
-async function saveShipmentsToServer(shipments, startDate, endDate) {
-    try {
-        const response = await fetch(SERVER_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                startDate,
-                endDate,
-                shipments
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Ошибка при сохранении данных на сервер');
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Ошибка сохранения на сервер:', error);
-        // Продолжаем работу даже если сохранение на сервер не удалось
-    }
-}
-
-function generateExcelFromShipments(shipments, startDate, endDate) {
-    // Подготавливаем данные для Excel
-    const excelData = [
-        ['Дата', 'Номер', 'Контрагент', 'Сумма', 'Статус', 'Проект', 'Канал продаж']
-    ];
-    
-    shipments.forEach(shipment => {
-        excelData.push([
-            shipment.moment ? shipment.moment.split(' ')[0] : '',
-            shipment.name || '',
-            shipment.agent ? shipment.agent.name : '',
-            shipment.sum ? `${shipment.sum / 100} ₽` : '0 ₽',
-            shipment.state ? shipment.state.name : '',
-            shipment.project ? shipment.project.name : '',
-            shipment.salesChannel ? shipment.salesChannel.name : ''
-        ]);
-    });
-    
-    // Создаем Excel файл
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(excelData);
-    XLSX.utils.book_append_sheet(wb, ws, "Отгрузки");
-    XLSX.writeFile(wb, `Отгрузки_${startDate}_${endDate}.xlsx`);
-}
-
-function exportToGoogleSheets() {
-    // Реализация аналогична exportToExcel, но с отправкой в Google Sheets
-    // Пока оставим вашу текущую реализацию
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    const project = document.getElementById('project-filter').value;
-    const channel = document.getElementById('channel-filter').value;
-
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Отправка данных в Google Sheets...');
+    updateStatus('loading', '<i class="fas fa-spinner fa-spin"></i> Отправка данных в Google Sheets...');
     toggleButtonLoading('export-gsheet-btn', true);
     document.getElementById('export-gsheet-btn').classList.add('pulse');
 
-    setTimeout(() => {
+    try {
+        // Здесь можно добавить вызов API для отправки в Google Sheets
+        // Покажем имитацию успешной отправки
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно отправлены в Google Sheets');
-        toggleButtonLoading('export-gsheet-btn', false);
-        document.getElementById('export-gsheet-btn').classList.remove('pulse');
         showCustomAlert('Данные успешно отправлены в Google Sheets!', 'success');
         animateSuccess();
-    }, 2000);
+    } catch (error) {
+        updateStatus('danger', `<i class="fas fa-exclamation-circle"></i> ${error.message}`);
+        showCustomAlert(error.message, 'danger');
+    } finally {
+        toggleButtonLoading('export-gsheet-btn', false);
+        document.getElementById('export-gsheet-btn').classList.remove('pulse');
+    }
 }
 
-// Остальные вспомогательные функции остаются без изменений
+function formatDateForBackend(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function formatDateForDisplay(date) {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+}
+
 function updateStatus(statusClass, message) {
     const statusBar = document.getElementById('status-bar');
     statusBar.className = `status-bar ${statusClass} show`;
@@ -205,7 +139,7 @@ function toggleButtonLoading(buttonId, isLoading) {
     const originalContent = button.innerHTML;
     
     if (isLoading) {
-        button.innerHTML = '<i class="fas fa-spinner spinner"></i> Обработка...';
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
         button.disabled = true;
     } else {
         button.innerHTML = originalContent;
@@ -228,7 +162,7 @@ function showCustomAlert(message, type) {
     alert.className = `custom-alert ${type}`;
     alert.innerHTML = `
         <div class="alert-content">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
