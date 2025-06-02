@@ -46,12 +46,16 @@ async function exportToTxt() {
     const originalText = btn.innerHTML;
     
     try {
-        // Показать статус загрузки
         updateStatus('loading', '<i class="fas fa-spinner fa-spin"></i> Загрузка данных...');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
         btn.disabled = true;
 
-        // Отправка запроса на бэкенд
+        // Тестовый запрос для проверки соединения
+        const testResponse = await fetch('http://localhost:5000/api/test');
+        if (!testResponse.ok) {
+            throw new Error('Не удалось подключиться к серверу');
+        }
+
         const response = await fetch('http://localhost:5000/api/get_moysklad_data', {
             method: 'POST',
             headers: {
@@ -63,9 +67,15 @@ async function exportToTxt() {
             })
         });
 
+        const result = await response.json().catch(() => null);
+        
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Неизвестная ошибка' }));
-            throw new Error(error.error || 'Ошибка сервера');
+            const errorMsg = result?.error || `HTTP error ${response.status}`;
+            throw new Error(errorMsg);
+        }
+
+        if (result && result.error) {
+            throw new Error(result.error);
         }
 
         // Скачивание файла
@@ -78,13 +88,19 @@ async function exportToTxt() {
         a.click();
         document.body.removeChild(a);
         
-        // Успешное завершение
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно загружены');
         showAlert('Данные успешно экспортированы в TXT', 'success');
     } catch (error) {
         console.error('Export error:', error);
-        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> ${error.message}`);
-        showAlert(`Ошибка: ${error.message}`, 'error');
+        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
+        
+        if (error.message.includes('Unauthorized')) {
+            showAlert('Ошибка авторизации: проверьте API токен', 'error');
+        } else if (error.message.includes('Forbidden')) {
+            showAlert('Недостаточно прав доступа', 'error');
+        } else {
+            showAlert(`Ошибка: ${error.message}`, 'error');
+        }
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

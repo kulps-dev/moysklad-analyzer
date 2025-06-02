@@ -1,3 +1,20 @@
+from flask import Flask, request, send_file, jsonify
+from flask_cors import CORS
+import requests
+from io import BytesIO
+from datetime import datetime
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Конфигурация API МойСклад
+MOYSKLAD_API_URL = "https://api.moysklad.ru/api/remap/1.2/entity/demand"
+MOYSKLAD_TOKEN = "your_api_token_here"  # Замените на ваш действительный токен
+
+def log_error(message):
+    """Логирование ошибок"""
+    print(f"[ERROR] {datetime.now()}: {message}")
+
 @app.route('/api/get_moysklad_data', methods=['POST'])
 def get_moysklad_data():
     try:
@@ -65,3 +82,6 @@ def get_moysklad_data():
     except Exception as e:
         app.logger.error(f"Unexpected error: {str(e)}")
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
