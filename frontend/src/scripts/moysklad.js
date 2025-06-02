@@ -1,52 +1,18 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация элементов
     initDatePickers();
     setupEventListeners();
-    
-    // Показать статус бар с анимацией
-    setTimeout(() => {
-        const statusBar = document.getElementById('status-bar');
-        statusBar.classList.add('show');
-    }, 500);
-    
-    // Добавить анимацию карточкам
-    animateCards();
-    
-    // Добавляем кнопку для скачивания TXT
-    addTxtExportButton();
+    showStatusBar();
 });
-
-function addTxtExportButton() {
-    const actionsDiv = document.querySelector('.actions');
-    if (!document.getElementById('export-txt-btn')) {
-        const downloadTxtBtn = document.createElement('button');
-        downloadTxtBtn.id = 'export-txt-btn';
-        downloadTxtBtn.className = 'btn btn-info';
-        downloadTxtBtn.innerHTML = '<i class="fas fa-file-alt"></i> Скачать данные из МойСклад (TXT)';
-        actionsDiv.insertBefore(downloadTxtBtn, actionsDiv.firstChild);
-        
-        // Добавляем обработчик события
-        downloadTxtBtn.addEventListener('click', exportToTxt);
-    }
-}
-
-function animateCards() {
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
-    });
-}
 
 function initDatePickers() {
     flatpickr(".datepicker", {
         locale: "ru",
         dateFormat: "d.m.Y",
         defaultDate: new Date(),
-        maxDate: new Date(),
-        theme: "dark"
+        maxDate: new Date()
     });
 
-    // Установка дат по умолчанию
+    // Установка дат по умолчанию (последние 30 дней)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -58,46 +24,34 @@ function initDatePickers() {
 function setupEventListeners() {
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
     document.getElementById('export-gsheet-btn').addEventListener('click', exportToGoogleSheets);
-    
-    // Добавить эффект при наведении на кнопки
-    const buttons = document.querySelectorAll('.btn');
-    buttons.forEach(btn => {
-        btn.addEventListener('mouseenter', function() {
-            this.classList.add('float');
-        });
-        
-        btn.addEventListener('mouseleave', function() {
-            this.classList.remove('float');
-        });
-    });
+    document.getElementById('export-txt-btn').addEventListener('click', exportToTxt);
 }
 
 async function exportToTxt() {
     const startDateInput = document.getElementById('start-date').value;
     const endDateInput = document.getElementById('end-date').value;
     
-    // Преобразуем даты из формата d.m.Y в Y-m-d для API
-    const startDateParts = startDateInput.split('.');
-    const endDateParts = endDateInput.split('.');
-    const startDate = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
-    const endDate = `${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`;
-
     if (!startDateInput || !endDateInput) {
-        showCustomAlert('Пожалуйста, выберите даты начала и окончания периода', 'error');
+        showAlert('Выберите даты начала и окончания периода', 'error');
         return;
     }
 
+    // Преобразование дат в формат YYYY-MM-DD
+    const [startDay, startMonth, startYear] = startDateInput.split('.');
+    const [endDay, endMonth, endYear] = endDateInput.split('.');
+    const startDate = `${startYear}-${startMonth}-${startDay}`;
+    const endDate = `${endYear}-${endMonth}-${endDay}`;
+
     const btn = document.getElementById('export-txt-btn');
-    const originalContent = btn.innerHTML;
+    const originalText = btn.innerHTML;
     
     try {
         // Показать статус загрузки
-        updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Загрузка данных из МойСклад...');
-        btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Загрузка...';
+        updateStatus('loading', '<i class="fas fa-spinner fa-spin"></i> Загрузка данных...');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
         btn.disabled = true;
-        btn.classList.add('pulse');
 
-        // Отправляем запрос на бэкенд
+        // Отправка запроса на бэкенд
         const response = await fetch('http://localhost:5000/api/get_moysklad_data', {
             method: 'POST',
             headers: {
@@ -110,11 +64,11 @@ async function exportToTxt() {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({ error: 'Неизвестная ошибка' }));
             throw new Error(error.error || 'Ошибка сервера');
         }
 
-        // Создаем и скачиваем файл
+        // Скачивание файла
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -126,79 +80,22 @@ async function exportToTxt() {
         
         // Успешное завершение
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно загружены');
-        showCustomAlert('Данные успешно загружены из МойСклад!', 'success');
-        animateSuccess();
+        showAlert('Данные успешно экспортированы в TXT', 'success');
     } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> Ошибка: ${error.message}`);
-        showCustomAlert(`Ошибка: ${error.message}`, 'error');
+        console.error('Export error:', error);
+        updateStatus('error', `<i class="fas fa-exclamation-circle"></i> ${error.message}`);
+        showAlert(`Ошибка: ${error.message}`, 'error');
     } finally {
-        btn.innerHTML = originalContent;
+        btn.innerHTML = originalText;
         btn.disabled = false;
-        btn.classList.remove('pulse');
     }
 }
 
-function exportToExcel() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    const project = document.getElementById('project-filter').value;
-    const channel = document.getElementById('channel-filter').value;
-
-    // Показать статус загрузки
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Подготовка Excel файла...');
-    toggleButtonLoading('export-excel-btn', true);
-    
-    // Добавить эффект пульсации
-    document.getElementById('export-excel-btn').classList.add('pulse');
-
-    // Имитация загрузки данных
+// Вспомогательные функции
+function showStatusBar() {
     setTimeout(() => {
-        const data = [
-            ['Дата', 'Номер заказа', 'Клиент', 'Сумма', 'Прибыль', 'Статус'],
-            ['15.05.2023', '#12345', 'ООО "ТехноПром"', '45 200 ₽', '12 450 ₽', 'Выполнен'],
-            ['14.05.2023', '#12344', 'ИП Смирнов А.В.', '18 700 ₽', '5 210 ₽', 'Выполнен'],
-            ['12.05.2023', '#12340', 'ООО "СтройГарант"', '102 500 ₽', '-2 300 ₽', 'Возврат']
-        ];
-
-        generateExcelFile(data, `Отгрузки_${startDate}_${endDate}.xlsx`);
-        
-        // Успешное завершение
-        updateStatus('success', '<i class="fas fa-check-circle"></i> Excel файл готов к скачиванию');
-        toggleButtonLoading('export-excel-btn', false);
-        document.getElementById('export-excel-btn').classList.remove('pulse');
-        
-        // Анимация успеха
-        animateSuccess();
-    }, 1500);
-}
-
-function exportToGoogleSheets() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    const project = document.getElementById('project-filter').value;
-    const channel = document.getElementById('channel-filter').value;
-
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Отправка данных в Google Sheets...');
-    toggleButtonLoading('export-gsheet-btn', true);
-    document.getElementById('export-gsheet-btn').classList.add('pulse');
-
-    setTimeout(() => {
-        updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно отправлены в Google Sheets');
-        toggleButtonLoading('export-gsheet-btn', false);
-        document.getElementById('export-gsheet-btn').classList.remove('pulse');
-        
-        // Показать красивый алерт
-        showCustomAlert('Данные успешно отправлены в Google Sheets!', 'success');
-        animateSuccess();
-    }, 2000);
-}
-
-function generateExcelFile(data, fileName) {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, "Отгрузки");
-    XLSX.writeFile(wb, fileName);
+        document.getElementById('status-bar').classList.add('show');
+    }, 500);
 }
 
 function updateStatus(statusClass, message) {
@@ -207,48 +104,27 @@ function updateStatus(statusClass, message) {
     statusBar.innerHTML = message;
 }
 
-function toggleButtonLoading(buttonId, isLoading) {
-    const button = document.getElementById(buttonId);
-    const originalContent = button.innerHTML;
-    
-    if (isLoading) {
-        button.innerHTML = '<i class="fas fa-spinner spinner"></i> Обработка...';
-        button.disabled = true;
-    } else {
-        button.innerHTML = originalContent;
-        button.disabled = false;
-    }
-}
-
-function animateSuccess() {
-    const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        card.style.transform = 'translateY(-5px)';
-        setTimeout(() => {
-            card.style.transform = 'translateY(0)';
-        }, 300);
-    });
-}
-
-function showCustomAlert(message, type) {
+function showAlert(message, type) {
     const alert = document.createElement('div');
     alert.className = `custom-alert ${type}`;
     alert.innerHTML = `
-        <div class="alert-content">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${message}</span>
-        </div>
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+        ${message}
     `;
     document.body.appendChild(alert);
     
-    setTimeout(() => {
-        alert.classList.add('show');
-    }, 10);
-    
+    setTimeout(() => alert.classList.add('show'), 10);
     setTimeout(() => {
         alert.classList.remove('show');
-        setTimeout(() => {
-            alert.remove();
-        }, 500);
+        setTimeout(() => alert.remove(), 500);
     }, 3000);
+}
+
+// Заглушки для других функций экспорта
+function exportToExcel() {
+    showAlert('Экспорт в Excel временно недоступен', 'warning');
+}
+
+function exportToGoogleSheets() {
+    showAlert('Экспорт в Google Sheets временно недоступен', 'warning');
 }
