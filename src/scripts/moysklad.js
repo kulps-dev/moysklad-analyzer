@@ -1,5 +1,6 @@
+import Exporter from './exporter.js';
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация элементов
     initDatePickers();
     setupEventListeners();
     
@@ -17,19 +18,24 @@ function animateCards() {
     const cards = document.querySelectorAll('.card');
     cards.forEach((card, index) => {
         card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('fade-in');
     });
 }
 
 function initDatePickers() {
+    // Инициализация datepicker с русской локализацией
     flatpickr(".datepicker", {
         locale: "ru",
         dateFormat: "d.m.Y",
         defaultDate: new Date(),
         maxDate: new Date(),
-        theme: "dark" // Новая тема для datepicker
+        theme: "dark",
+        onChange: function(selectedDates, dateStr, instance) {
+            validateDateRange();
+        }
     });
 
-    // Установка дат по умолчанию
+    // Установка дат по умолчанию (последние 30 дней)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
@@ -38,11 +44,32 @@ function initDatePickers() {
     document.getElementById('end-date')._flatpickr.setDate(endDate);
 }
 
+function validateDateRange() {
+    const startDate = new Date(document.getElementById('start-date').value.split('.').reverse().join('-'));
+    const endDate = new Date(document.getElementById('end-date').value.split('.').reverse().join('-'));
+    
+    if (startDate > endDate) {
+        showCustomAlert('Дата начала не может быть больше даты окончания', 'error');
+        document.getElementById('export-excel-btn').disabled = true;
+        document.getElementById('export-gsheet-btn').disabled = true;
+    } else {
+        document.getElementById('export-excel-btn').disabled = false;
+        document.getElementById('export-gsheet-btn').disabled = false;
+    }
+}
+
 function setupEventListeners() {
-    document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+    // Кнопка экспорта в Excel
+    document.getElementById('export-excel-btn').addEventListener('click', () => Exporter.exportToExcel());
+    
+    // Кнопка экспорта в Google Sheets
     document.getElementById('export-gsheet-btn').addEventListener('click', exportToGoogleSheets);
     
-    // Добавить эффект при наведении на кнопки
+    // Фильтры
+    document.getElementById('project-filter').addEventListener('change', updateFilters);
+    document.getElementById('channel-filter').addEventListener('change', updateFilters);
+    
+    // Эффекты при наведении на кнопки
     const buttons = document.querySelectorAll('.btn');
     buttons.forEach(btn => {
         btn.addEventListener('mouseenter', function() {
@@ -53,40 +80,20 @@ function setupEventListeners() {
             this.classList.remove('float');
         });
     });
+    
+    // Адаптивное меню
+    const menuToggle = document.getElementById('menu-toggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', toggleMobileMenu);
+    }
 }
 
-function exportToExcel() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
+function updateFilters() {
     const project = document.getElementById('project-filter').value;
     const channel = document.getElementById('channel-filter').value;
-
-    // Показать статус загрузки
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Подготовка Excel файла...');
-    toggleButtonLoading('export-excel-btn', true);
     
-    // Добавить эффект пульсации
-    document.getElementById('export-excel-btn').classList.add('pulse');
-
-    // Имитация загрузки данных
-    setTimeout(() => {
-        const data = [
-            ['Дата', 'Номер заказа', 'Клиент', 'Сумма', 'Прибыль', 'Статус'],
-            ['15.05.2023', '#12345', 'ООО "ТехноПром"', '45 200 ₽', '12 450 ₽', 'Выполнен'],
-            ['14.05.2023', '#12344', 'ИП Смирнов А.В.', '18 700 ₽', '5 210 ₽', 'Выполнен'],
-            ['12.05.2023', '#12340', 'ООО "СтройГарант"', '102 500 ₽', '-2 300 ₽', 'Возврат']
-        ];
-
-        generateExcelFile(data, `Отгрузки_${startDate}_${endDate}.xlsx`);
-        
-        // Успешное завершение
-        updateStatus('success', '<i class="fas fa-check-circle"></i> Excel файл готов к скачиванию');
-        toggleButtonLoading('export-excel-btn', false);
-        document.getElementById('export-excel-btn').classList.remove('pulse');
-        
-        // Анимация успеха
-        animateSuccess();
-    }, 1500);
+    // Здесь можно добавить логику фильтрации данных
+    console.log(`Фильтры обновлены: Проект - ${project}, Канал - ${channel}`);
 }
 
 function exportToGoogleSheets() {
@@ -95,63 +102,42 @@ function exportToGoogleSheets() {
     const project = document.getElementById('project-filter').value;
     const channel = document.getElementById('channel-filter').value;
 
-    updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Отправка данных в Google Sheets...');
-    toggleButtonLoading('export-gsheet-btn', true);
+    Exporter.updateStatus('loading', '<i class="fas fa-spinner spinner"></i> Отправка данных в Google Sheets...');
+    Exporter.toggleButtonLoading('export-gsheet-btn', true);
     document.getElementById('export-gsheet-btn').classList.add('pulse');
 
+    // Имитация отправки в Google Sheets
     setTimeout(() => {
-        updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно отправлены в Google Sheets');
-        toggleButtonLoading('export-gsheet-btn', false);
+        Exporter.updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно отправлены в Google Sheets');
+        Exporter.toggleButtonLoading('export-gsheet-btn', false);
         document.getElementById('export-gsheet-btn').classList.remove('pulse');
         
-        // Показать красивый алерт
-        showCustomAlert('Данные успешно отправлены в Google Sheets!', 'success');
-        animateSuccess();
+        Exporter.showCustomAlert('Данные успешно отправлены в Google Sheets!', 'success');
+        Exporter.animateSuccess();
     }, 2000);
 }
 
-function generateExcelFile(data, fileName) {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, "Отгрузки");
-    XLSX.writeFile(wb, fileName);
-}
-
-function updateStatus(statusClass, message) {
-    const statusBar = document.getElementById('status-bar');
-    statusBar.className = `status-bar ${statusClass} show`;
-    statusBar.innerHTML = message;
-}
-
-function toggleButtonLoading(buttonId, isLoading) {
-    const button = document.getElementById(buttonId);
-    const originalContent = button.innerHTML;
+function toggleMobileMenu() {
+    const nav = document.querySelector('nav');
+    nav.classList.toggle('mobile-visible');
     
-    if (isLoading) {
-        button.innerHTML = '<i class="fas fa-spinner spinner"></i> Обработка...';
-        button.disabled = true;
+    const icon = document.getElementById('menu-toggle-icon');
+    if (nav.classList.contains('mobile-visible')) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-times');
     } else {
-        button.innerHTML = originalContent;
-        button.disabled = false;
+        icon.classList.remove('fa-times');
+        icon.classList.add('fa-bars');
     }
 }
 
-function animateSuccess() {
-    const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        card.style.transform = 'translateY(-5px)';
-        setTimeout(() => {
-            card.style.transform = 'translateY(0)';
-        }, 300);
-    });
-}
-
+// Вспомогательные функции
 function showCustomAlert(message, type) {
     const alert = document.createElement('div');
     alert.className = `custom-alert ${type}`;
     alert.innerHTML = `
         <div class="alert-content">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
@@ -168,3 +154,34 @@ function showCustomAlert(message, type) {
         }, 500);
     }, 3000);
 }
+
+// Инициализация tooltips
+function initTooltips() {
+    const elements = document.querySelectorAll('[data-tooltip]');
+    elements.forEach(el => {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.textContent = el.getAttribute('data-tooltip');
+        el.appendChild(tooltip);
+        
+        el.addEventListener('mouseenter', () => {
+            tooltip.style.opacity = '1';
+            tooltip.style.visibility = 'visible';
+        });
+        
+        el.addEventListener('mouseleave', () => {
+            tooltip.style.opacity = '0';
+            tooltip.style.visibility = 'hidden';
+        });
+    });
+}
+
+// Инициализация всех компонентов
+function init() {
+    initDatePickers();
+    initTooltips();
+    setupEventListeners();
+}
+
+// Запуск приложения
+init();
