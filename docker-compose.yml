@@ -6,26 +6,10 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./src:/usr/share/nginx/html
-    environment:
-      - NGINX_ENV=production
+      - ./src:/usr/share/nginx/html  # Теперь монтируем прямо в корень
     restart: unless-stopped
     networks:
       - app-network
-
-  # Пример бэкенд сервиса (раскомментируйте при необходимости)
-  # backend:
-  #   image: node:18-alpine
-  #   working_dir: /app
-  #   volumes:
-  #     - ./backend:/app
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - NODE_ENV=production
-  #   command: npm start
-  #   networks:
-  #     - app-network
 
 networks:
   app-network:
