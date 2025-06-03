@@ -121,34 +121,5 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <script>
-        document.getElementById('export-txt-btn').addEventListener('click', async function() {
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
-            
-            if (!startDate || !endDate) {
-                alert('Пожалуйста, выберите даты начала и окончания');
-                return;
-            }
-        
-            try {
-                const response = await fetch(`http://localhost:3001/api/moysklad?startDate=${startDate}&endDate=${endDate}`);
-                if (!response.ok) throw new Error('Ошибка при получении данных');
-                
-                // Браузер автоматически скачает файл благодаря заголовкам ответа
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'moysklad_data.txt';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Произошла ошибка: ' + error.message);
-            }
-        });
-        </script>
 </body>
 </html>
