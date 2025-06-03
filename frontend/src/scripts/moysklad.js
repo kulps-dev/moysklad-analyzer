@@ -52,15 +52,11 @@ async function exportToTxt() {
         btn.disabled = true;
 
         // Отправка запроса на бэкенд
-        const response = await fetch('http://localhost:5000/api/get_moysklad_data', {
-            method: 'POST',
+        const response = await fetch('/api/get_moysklad_data', {
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                start_date: startDate,
-                end_date: endDate
-            })
+            }
         });
 
         if (!response.ok) {

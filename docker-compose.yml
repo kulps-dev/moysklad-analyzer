@@ -8,8 +8,17 @@ services:
     ports:
       - "80:80"
     networks:
-      - frontend-network
+      - analytics-network
+
+  backend:
+    build: ./backend
+    container_name: business-analytics-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - analytics-network
 
 networks:
-  frontend-network:
+  analytics-network:
     driver: bridge
