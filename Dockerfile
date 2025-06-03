@@ -5,10 +5,10 @@ FROM nginx:alpine
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Копируем нашу конфигурацию Nginx
-COPY nginx/nginx.conf /etc/nginx/conf.d/
+COPY nginx/nginx.conf /etc/nginx/conf.d
 
-# Копируем статические файлы фронтенда
-COPY frontend/src /usr/share/nginx/html
+# Копируем файлы фронтенда
+COPY frontend /usr/share/nginx/html
 
 # Открываем порт 80
 EXPOSE 80
