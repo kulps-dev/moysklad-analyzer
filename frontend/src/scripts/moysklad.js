@@ -28,20 +28,6 @@ function setupEventListeners() {
 }
 
 async function exportToTxt() {
-    const startDateInput = document.getElementById('start-date').value;
-    const endDateInput = document.getElementById('end-date').value;
-    
-    if (!startDateInput || !endDateInput) {
-        showAlert('Выберите даты начала и окончания периода', 'error');
-        return;
-    }
-
-    // Преобразование дат в формат YYYY-MM-DD
-    const [startDay, startMonth, startYear] = startDateInput.split('.');
-    const [endDay, endMonth, endYear] = endDateInput.split('.');
-    const startDate = `${startYear}-${startMonth}-${startDay}`;
-    const endDate = `${endYear}-${endMonth}-${endDay}`;
-
     const btn = document.getElementById('export-txt-btn');
     const originalText = btn.innerHTML;
     
@@ -51,7 +37,7 @@ async function exportToTxt() {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
         btn.disabled = true;
 
-        // Отправка запроса на бэкенд
+        // Отправка запроса к вашему бэкенду
         const response = await fetch('/api/get_moysklad_data', {
             method: 'GET',
             headers: {
@@ -64,15 +50,17 @@ async function exportToTxt() {
             throw new Error(error.error || 'Ошибка сервера');
         }
 
-        // Скачивание файла
-        const blob = await response.blob();
+        // Получаем данные и создаем файл для скачивания
+        const data = await response.text();
+        const blob = new Blob([data], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `moysklad_data_${startDateInput}_${endDateInput}.txt`;
+        a.download = 'moysklad_data.txt';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
         
         // Успешное завершение
         updateStatus('success', '<i class="fas fa-check-circle"></i> Данные успешно загружены');
